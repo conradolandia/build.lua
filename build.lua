@@ -2,26 +2,34 @@
 
 -- [[ Customization ]]
 --
--- Generating documentation
-local docs_command = "pandoc"
-local docs_folder = "doc/context/third/pauta/"
-
--- Context
-local build_command = "/home/andi/Apps/lmtx/tex/texmf-linux-64/bin/context"
-local build_folder = "tex/context/third/pauta/"
-local build_path_list = {build_folder, docs_folder}
-local build_options = {"--purgeall", "--noconsole", "--path=" .. table.concat(build_path_list, ",")}
-local build_modes = {
-    h = "--mode=letter:h",
-    v = "--mode=letter:v"
-}
-
--- Messages used all around
+-- Strings used all around
 local space = " "
 local intro = "Processing the file "
 local separator = "\n"
 local error_message = space .. "failed to complete"
 local success_message = space .. "completed successfully"
+
+-- Generating documentation with Pandoc
+local docs_command = "pandoc"
+local docs_folder = "doc/context/third/pauta/"
+
+-- Processing with LMTX
+local build_command = "/home/andi/Apps/lmtx/tex/texmf-linux-64/bin/context"
+local build_folder = "tex/context/third/pauta/"
+local build_path = "--path=" .. docs_folder .. "," .. build_folder
+
+-- Build options table
+local build_options = {
+  --"--purgeall",
+  --"--noconsole",
+  build_path
+}
+
+-- Build modes for context
+local build_modes = {
+    h = "--mode=letter:h",
+    v = "--mode=letter:v"
+}
 
 -- Create full options string for the build command with optional mode
 local function create_options(mode)
