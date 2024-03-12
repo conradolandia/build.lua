@@ -33,6 +33,8 @@ local build_modes = {
     v = "--mode=letter:v"
 }
 
+-- [[ Internal functions ]]
+--
 -- Create full options string for the build command with optional mode
 -- I use a table because it seems easier than just concatenating strings and spaces
 local function create_options(mode)
@@ -57,31 +59,7 @@ local function create_options(mode)
     return table.concat(build_options, space)
 end
 
--- Tasks to execute and options
-local tasks = {{
-    name = "Build documentation from README.md",
-    command = docs_command,
-    options = "--from=markdown --to=context+ntb --wrap=none --top-level-division=chapter --section-divs",
-    input = "README.md",
-    after = "-o",
-    output = docs_folder .. "README.tex"
-  }, {
-    name = "Typeset example",
-    command = build_command,
-    options = create_options(build_modes.h),
-    input = docs_folder .. "pauta-example.tex",
-    postprocess = "mv pauta-example.pdf " .. docs_folder
-  }, {
-    name = "Typeset documentation",
-    command = build_command,
-    options = create_options(build_modes.v),
-    input = docs_folder .. "pauta.tex",
-    postprocess = "mv pauta.pdf " .. docs_folder
-}}
-
--- [[ Internal functions ]]
-
--- Function to build a task
+-- Function to execute a task
 local function execute(task, show_output)
     print("Executing [ " .. task.name .. " ]")
 
@@ -130,8 +108,31 @@ local function execute(task, show_output)
     end
 end
 
+-- Tasks to execute and options
+local tasks = {{
+  name = "Build documentation from README.md",
+  command = docs_command,
+  options = "--from=markdown --to=context+ntb --wrap=none --top-level-division=chapter --section-divs",
+  input = "README.md",
+  after = "-o",
+  output = docs_folder .. "README.tex"
+}, {
+  name = "Typeset example",
+  command = build_command,
+  options = create_options(build_modes.h),
+  input = docs_folder .. "pauta-example.tex",
+  postprocess = "mv pauta-example.pdf " .. docs_folder
+}, {
+  name = "Typeset documentation",
+  command = build_command,
+  options = create_options(build_modes.v),
+  input = docs_folder .. "pauta.tex",
+  postprocess = "mv pauta.pdf " .. docs_folder
+}}
+
 -- Build each task in the list
 for key, task in ipairs(tasks) do
     io.write("[" .. key .. "/" .. #tasks .. "] -> ")
     execute(task, show_log)
 end
+
