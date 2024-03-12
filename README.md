@@ -1,4 +1,4 @@
-# Lua-build
+# Build.lua
 
 Just a lua script that works for me as a simple build system for my ConTeXt projects. Nothing fancy or elegant, just something that does the job withot depending on anything besides a ConTeXt distribution (`luametatex` bundles its own lua interpreter).
 
