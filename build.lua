@@ -14,17 +14,17 @@ local base_folder = "/context/third/pauta/"
 local build_folder = "tex" .. base_folder
 local docs_folder = "doc" .. base_folder
 
--- Generating documentation with Pandoc
+-- Generate documentation with Pandoc
 local docs_command = "pandoc"
 
--- Processing with LMTX
+-- Process with LMTX
 local build_command = "/home/andi/Apps/lmtx/tex/texmf-linux-64/bin/context"
 local build_path = "--path=" .. docs_folder .. "," .. build_folder
 
--- Do we show the build log in the terminal?
+-- Show the build log in the terminal?
 local show_log = false
 
--- Do we keek those logs in the root folder?
+-- Delete log files in the root folder, or keep them?
 local delete_logs = true
 
 -- Build modes for LMTX
@@ -34,18 +34,27 @@ local build_modes = {
 }
 
 -- Create full options string for the build command with optional mode
+-- I use a table because it seems easier than just concatenating strings and spaces
 local function create_options(mode)
     local build_options = {}
+    -- Show log?
     if show_log then
         table.insert(build_options, "--noconsole")
     end
+    -- Delete logs?
     if delete_logs then
         table.insert(build_options, "--purgeall")
     end
-
-    table.insert(build_options, build_path)
-
-    return table.concat(build_options, space) .. space .. mode
+    -- Insert extra paths
+    if build_path then
+      table.insert(build_options, build_path)
+    end
+    -- Insert LMTX build mode
+    if mode then
+        table.insert(build_options, mode)
+    end
+    -- Return table as concatenated string
+    return table.concat(build_options, space)
 end
 
 -- Tasks to execute and options
