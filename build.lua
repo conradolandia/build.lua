@@ -4,22 +4,23 @@
 --
 -- Strings used all around
 local space = " "
-local intro = "Processing the file "
+local intro = "Processing the file" .. space
 local separator = "\n"
 local error_message = space .. "failed to complete"
 local success_message = space .. "completed successfully"
 
 -- Build tree
-local base_folder = "/context/third/pauta/"
-local build_folder = "tex" .. base_folder
-local docs_folder = "doc" .. base_folder
+-- local base_folder
+-- local build_folder
+-- local docs_folder
 
 -- Generate documentation with Pandoc
 local docs_command = "pandoc"
 
 -- Process with LMTX
-local build_command = "/home/andi/Apps/lmtx/tex/texmf-linux-64/bin/context"
-local build_path = "--path=" .. docs_folder .. "," .. build_folder
+local context_path = os.getenv("LMTX_PATH") or "/home/andi/Apps/lmtx/tex/texmf-linux-64/bin/"
+local build_command = context_path .. "context"
+local build_path
 
 -- Show the build log in the terminal?
 local show_log = false
@@ -29,8 +30,8 @@ local delete_logs = true
 
 -- Build modes for LMTX
 local build_modes = {
-	h = "--mode=letter:h",
-	v = "--mode=letter:v",
+	a = "--mode=a",
+	b = "--mode=b",
 }
 
 -- Create full options string for the build command with optional mode
@@ -64,30 +65,47 @@ end
 local Task = {}
 Task.__index = Task
 
-function Task:new(name, command, options, input, after, output, postprocess)
+---Task metatable constructor
+---@param name string: A descriptive name for the task
+---@param command string: Command to run
+---@param options string | nil: Options for the command
+---@param input string | nil: Input file
+---@param afterinput string | nil: Options after the input file
+---@param output string | nil: Output file
+---@param postprocess string | nil: Another command to run after finishing the main command
+--
+function Task:new(name, command, options, input, afterinput, output, postprocess)
 	local self = setmetatable({}, Task)
 	self.name = name
 	self.command = command
 	self.options = options
 	self.input = input
-	self.after = after
+	self.afterinput = afterinput
 	self.output = output
 	self.postprocess = postprocess
 	return self
 end
 
+---Task execution method
+---@param show_output boolean | nil: Show output from the executed command
+--
 function Task:execute(show_output)
 	print("Executing task [ " .. self.name .. " ]")
 
 	local command = self.command
+
+	if command == nil then
+		error("There is no command to run!")
+	end
+
 	if self.options then
 		command = command .. space .. self.options
 	end
 	if self.input then
 		command = command .. space .. self.input
 	end
-	if self.after then
-		command = command .. space .. self.after
+	if self.afterinput then
+		command = command .. space .. self.afterinput
 	end
 	if self.output then
 		command = command .. space .. self.output
@@ -96,23 +114,26 @@ function Task:execute(show_output)
 	print("Calling: " .. command)
 
 	local handle = io.popen(command)
-	local output = handle:read("*a")
+	local message
 
-	if show_output then
-		print(output)
-	end
-
-	local message = success_message
 	if handle then
+		local output = handle:read("*a")
+		if show_output then
+			print(output)
+		end
 		message = success_message
+	else
+		message = error_message
 	end
 
 	print(intro .. self.input .. message)
 
-	if self.postprocess ~= nil then
+	if self.postprocess then
 		local success, tag, code = os.execute(self.postprocess)
 		if success then
 			print("Postprocessing: " .. self.postprocess .. separator)
+		else
+			print("Could not run postprocessing: [" .. command .. "]\nTag: [" .. tag .. "]\nCode: [" .. code .. "]")
 		end
 	else
 		print(separator)
@@ -122,30 +143,21 @@ end
 -- [[ Tasks ]]
 local tasks = {
 	Task:new(
-		"Build documentation from README.md",
+		"Build ConTeXt file from README.md",
 		docs_command,
 		"--from=markdown --to=context+ntb --wrap=none --top-level-division=chapter --section-divs",
 		"README.md",
 		"-o",
-		docs_folder .. "README.tex"
+		"README.tex"
 	),
 	Task:new(
 		"Typeset example",
 		build_command,
 		create_options(build_modes.h),
-		docs_folder .. "pauta-example.tex",
+		"example.tex",
 		nil,
 		nil,
-		"mv pauta-example.pdf " .. docs_folder
-	),
-	Task:new(
-		"Typeset documentation",
-		build_command,
-		create_options(build_modes.v),
-		docs_folder .. "pauta.tex",
-		nil,
-		nil,
-		"mv pauta.pdf " .. docs_folder
+		"rm README.tex"
 	),
 }
 
