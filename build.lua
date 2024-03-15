@@ -9,21 +9,13 @@ local separator = "\n"
 local error_message = space .. "failed to complete"
 local success_message = space .. "completed successfully"
 
--- Build tree
--- local base_folder
--- local build_folder
--- local docs_folder
-
--- Generate documentation with Pandoc
-local docs_command = "pandoc"
-
 -- Process with LMTX
 local context_path = os.getenv("LMTX_PATH") or "/home/andi/Apps/lmtx/tex/texmf-linux-64/bin/"
 local build_command = context_path .. "context"
-local build_path
+local build_path -- To add extra --path(s) to context, where it will search for modules, etc.
 
 -- Show the build log in the terminal?
-local show_log = false
+local hide_log = false
 
 -- Delete log files in the root folder, or keep them?
 local delete_logs = true
@@ -39,7 +31,7 @@ local build_modes = {
 local function create_options(mode)
 	local build_options = {}
 	-- Show log?
-	if show_log then
+	if hide_log then
 		table.insert(build_options, "--noconsole")
 	end
 	-- Delete logs?
@@ -65,7 +57,7 @@ end
 local Task = {}
 Task.__index = Task
 
----Task metatable constructor
+--- [[ Task metatable constructor ]]
 ---@param name string: A descriptive name for the task
 ---@param command string: Command to run
 ---@param options string | nil: Options for the command
@@ -86,10 +78,8 @@ function Task:new(name, command, options, input, afterinput, output, postprocess
 	return self
 end
 
----Task execution method
----@param show_output boolean | nil: Show output from the executed command
---
-function Task:execute(show_output)
+--- [[ Task execution method ]]
+function Task:execute()
 	print("Executing task [ " .. self.name .. " ]")
 
 	local command = self.command
@@ -113,17 +103,13 @@ function Task:execute(show_output)
 
 	print("Calling: " .. command)
 
-	local handle = io.popen(command)
+	local handle, t, c = os.execute(command)
 	local message
 
 	if handle then
-		local output = handle:read("*a")
-		if show_output then
-			print(output)
-		end
 		message = success_message
 	else
-		message = error_message
+		message = error_message .. " (" .. t .. "/" .. c .. ")"
 	end
 
 	print(intro .. self.input .. message)
@@ -133,7 +119,7 @@ function Task:execute(show_output)
 		if success then
 			print("Postprocessing: " .. self.postprocess .. separator)
 		else
-			print("Could not run postprocessing: [" .. command .. "]\nTag: [" .. tag .. "]\nCode: [" .. code .. "]")
+			print("Could not run postprocessing: [" .. command .. " (" .. tag .. "/" .. code .. ")]")
 		end
 	else
 		print(separator)
@@ -143,26 +129,18 @@ end
 -- [[ Tasks ]]
 local tasks = {
 	Task:new(
-		"Build ConTeXt file from README.md",
-		docs_command,
-		"--from=markdown --to=context+ntb --wrap=none --top-level-division=chapter --section-divs",
-		"README.md",
-		"-o",
-		"README.tex"
-	),
-	Task:new(
 		"Typeset example",
 		build_command,
 		create_options(build_modes.h),
 		"example.tex",
 		nil,
 		nil,
-		"rm README.tex"
+		"rm README-*.tex"
 	),
 }
 
 -- Build each task in the list
 for key, task in ipairs(tasks) do
 	io.write("[" .. key .. "/" .. #tasks .. "] -> ")
-	task:execute(show_log)
+	task:execute()
 end
